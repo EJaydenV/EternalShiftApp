@@ -5,7 +5,6 @@ import '../../core/api/providers.dart';
 import '../../core/config/app_config.dart';
 import '../../core/theme/app_theme.dart';
 import '../../core/widgets/confirm_dialog.dart';
-import '../../core/widgets/section_card.dart';
 
 class SettingsScreen extends ConsumerStatefulWidget {
   const SettingsScreen({super.key});
@@ -78,7 +77,8 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
       await settings.setRefreshInterval(_refreshInterval);
 
       final client = ref.read(apiClientProvider);
-      final activeToken = token.isNotEmpty ? token : await settings.getApiToken();
+      final activeToken =
+          token.isNotEmpty ? token : await settings.getApiToken();
       client.updateConfig(baseUrl: url, token: activeToken);
 
       ref.read(serverUrlProvider.notifier).state = url;
@@ -88,7 +88,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Settings saved')));
+            const SnackBar(content: Text('Settings saved')));
       }
     } finally {
       if (mounted) setState(() => _saving = false);
@@ -104,12 +104,11 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     );
     if (!ok) return;
     await ref.read(settingsStorageProvider).clearApiToken();
-    final client = ref.read(apiClientProvider);
-    client.updateConfig(token: null);
+    ref.read(apiClientProvider).updateConfig(token: null);
     setState(() => _tokenSet = false);
     if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Token cleared')));
+      ScaffoldMessenger.of(context)
+          .showSnackBar(const SnackBar(content: Text('Token cleared')));
     }
   }
 
@@ -123,13 +122,10 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     client.updateConfig(baseUrl: url, token: token);
     final healthy = await client.checkHealth();
     if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-              healthy ? 'Connected successfully!' : 'Connection failed'),
-          backgroundColor: healthy ? AppTheme.success : AppTheme.danger,
-        ),
-      );
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+        content: Text(healthy ? 'Connected successfully!' : 'Connection failed'),
+        backgroundColor: healthy ? AppTheme.success : AppTheme.danger,
+      ));
     }
   }
 
@@ -141,17 +137,19 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
       body: ListView(
         padding: const EdgeInsets.only(bottom: 40),
         children: [
-          SectionCard(
-            title: 'SERVER CONNECTION',
+          const SizedBox(height: 8),
+          _sectionLabel('SERVER CONNECTION'),
+          _glassSection(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
                 TextFormField(
                   controller: _urlCtrl,
-                  style: const TextStyle(color: AppTheme.textPrimary),
+                  style: const TextStyle(color: AppTheme.onSurface),
                   decoration: const InputDecoration(
                     labelText: 'Server URL',
-                    prefixIcon: Icon(Icons.dns_rounded, size: 16, color: AppTheme.textMuted),
+                    prefixIcon: Icon(Icons.dns_rounded,
+                        size: 16, color: AppTheme.outline),
                   ),
                   keyboardType: TextInputType.url,
                   autocorrect: false,
@@ -159,10 +157,10 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                 const SizedBox(height: 12),
                 if (_tokenSet)
                   Container(
-                    padding: const EdgeInsets.all(10),
+                    padding: const EdgeInsets.all(12),
                     decoration: BoxDecoration(
-                      color: AppTheme.success.withOpacity(0.08),
-                      borderRadius: BorderRadius.circular(8),
+                      color: AppTheme.success.withOpacity(0.06),
+                      borderRadius: BorderRadius.circular(10),
                       border: Border.all(
                           color: AppTheme.success.withOpacity(0.25)),
                     ),
@@ -180,6 +178,11 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                         ),
                         TextButton(
                           onPressed: _clearToken,
+                          style: TextButton.styleFrom(
+                              padding: EdgeInsets.zero,
+                              minimumSize: Size.zero,
+                              tapTargetSize:
+                                  MaterialTapTargetSize.shrinkWrap),
                           child: const Text('Clear',
                               style: TextStyle(
                                   color: AppTheme.danger, fontSize: 12)),
@@ -187,22 +190,22 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                       ],
                     ),
                   ),
-                const SizedBox(height: 8),
+                const SizedBox(height: 12),
                 TextFormField(
                   controller: _tokenCtrl,
-                  style: const TextStyle(color: AppTheme.textPrimary),
+                  style: const TextStyle(color: AppTheme.onSurface),
                   obscureText: true,
                   decoration: InputDecoration(
                     labelText: _tokenSet
                         ? 'New API Token (leave blank to keep current)'
                         : 'API Access Token',
                     prefixIcon: const Icon(Icons.key_rounded,
-                        size: 16, color: AppTheme.textMuted),
+                        size: 16, color: AppTheme.outline),
                   ),
                   autocorrect: false,
                   enableSuggestions: false,
                 ),
-                const SizedBox(height: 12),
+                const SizedBox(height: 16),
                 Row(
                   children: [
                     Expanded(
@@ -210,11 +213,10 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                         onPressed: _testConnection,
                         icon: const Icon(Icons.wifi_tethering_rounded,
                             size: 14),
-                        label: const Text('Test',
-                            style: TextStyle(fontSize: 12)),
+                        label: const Text('Test'),
                       ),
                     ),
-                    const SizedBox(width: 8),
+                    const SizedBox(width: 10),
                     Expanded(
                       child: ElevatedButton(
                         onPressed: _saving ? null : _save,
@@ -224,9 +226,8 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                                 height: 14,
                                 child: CircularProgressIndicator(
                                     strokeWidth: 2,
-                                    color: Colors.white))
-                            : const Text('Save',
-                                style: TextStyle(fontSize: 13)),
+                                    color: AppTheme.onPrimary))
+                            : const Text('Save'),
                       ),
                     ),
                   ],
@@ -234,15 +235,25 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
               ],
             ),
           ),
-          SectionCard(
-            title: 'POLLING',
+          const SizedBox(height: 16),
+          _sectionLabel('POLLING INTERVAL'),
+          _glassSection(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  'Refresh Interval: ${_refreshInterval}s',
-                  style: const TextStyle(
-                      color: AppTheme.textPrimary, fontSize: 13),
+                Row(
+                  children: [
+                    const Icon(Icons.timer_outlined,
+                        size: 14, color: AppTheme.secondary),
+                    const SizedBox(width: 8),
+                    Text(
+                      'Refresh every ${_refreshInterval}s',
+                      style: const TextStyle(
+                          color: AppTheme.onSurface,
+                          fontSize: 14,
+                          fontWeight: FontWeight.w500),
+                    ),
+                  ],
                 ),
                 Slider(
                   value: _refreshInterval.toDouble(),
@@ -255,57 +266,48 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                 ),
                 const Text(
                   'Longer intervals save battery. Shorter intervals give faster updates.',
-                  style: TextStyle(color: AppTheme.textMuted, fontSize: 11),
+                  style: TextStyle(color: AppTheme.outline, fontSize: 11),
                 ),
               ],
             ),
           ),
-          SectionCard(
-            title: 'SECURITY',
+          const SizedBox(height: 16),
+          _sectionLabel('SECURITY'),
+          _glassSection(
             child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                _securityNote(
-                    Icons.check_circle_rounded,
-                    AppTheme.success,
+                _secNote(Icons.check_circle_rounded, AppTheme.success,
                     'No LLM runs locally on this device'),
-                _securityNote(
-                    Icons.check_circle_rounded,
-                    AppTheme.success,
+                _secNote(Icons.check_circle_rounded, AppTheme.success,
                     'API token stored in secure encrypted storage'),
-                _securityNote(
-                    Icons.check_circle_rounded,
-                    AppTheme.success,
+                _secNote(Icons.check_circle_rounded, AppTheme.success,
                     'Token is never displayed after saving'),
-                _securityNote(
-                    Icons.check_circle_rounded,
-                    AppTheme.success,
+                _secNote(Icons.check_circle_rounded, AppTheme.success,
                     'Server is the only source of truth'),
-                _securityNote(
-                    Icons.warning_rounded,
-                    AppTheme.warning,
+                _secNote(Icons.warning_rounded, AppTheme.warning,
                     'Do not expose server publicly without auth'),
               ],
             ),
           ),
-          SectionCard(
-            title: 'ABOUT',
+          const SizedBox(height: 16),
+          _sectionLabel('ABOUT'),
+          _glassSection(
             child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                _row('App Version', AppConfig.appVersion),
-                _row('Default Server', AppConfig.defaultServerUrl),
-                _row('Architecture', 'Mobile client → Server API only'),
+                _infoRow('App Version', AppConfig.appVersion),
+                _infoRow('Default Server', AppConfig.defaultServerUrl),
+                _infoRow('Architecture', 'Mobile client → Server API only'),
               ],
             ),
           ),
+          const SizedBox(height: 24),
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16),
             child: OutlinedButton(
               onPressed: () async {
                 final ok = await showConfirmDialog(
                   context,
-                  title: 'Reset Onboarding?',
+                  title: 'Reset Setup?',
                   message:
                       'You will be taken back to the server setup screen.',
                   isDangerous: true,
@@ -329,37 +331,62 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     );
   }
 
-  Widget _securityNote(IconData icon, Color color, String text) {
+  Widget _sectionLabel(String label) {
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 4),
+      padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
+      child: Text(
+        label,
+        style: const TextStyle(
+          color: AppTheme.outline,
+          fontSize: 11,
+          fontWeight: FontWeight.w600,
+          letterSpacing: 0.8,
+        ),
+      ),
+    );
+  }
+
+  Widget _glassSection({required Widget child}) {
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 16),
+      decoration: AppTheme.glassCard(),
+      padding: const EdgeInsets.all(18),
+      child: child,
+    );
+  }
+
+  Widget _secNote(IconData icon, Color color, String text) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 5),
       child: Row(
         children: [
           Icon(icon, color: color, size: 14),
-          const SizedBox(width: 8),
+          const SizedBox(width: 10),
           Expanded(
               child: Text(text,
                   style: const TextStyle(
-                      color: AppTheme.textSecondary, fontSize: 12))),
+                      color: AppTheme.onSurfaceVariant, fontSize: 12))),
         ],
       ),
     );
   }
 
-  Widget _row(String label, String value) {
+  Widget _infoRow(String label, String value) {
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 4),
+      padding: const EdgeInsets.symmetric(vertical: 5),
       child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           SizedBox(
             width: 110,
             child: Text(label,
                 style: const TextStyle(
-                    color: AppTheme.textMuted, fontSize: 12)),
+                    color: AppTheme.outline, fontSize: 12)),
           ),
           Expanded(
               child: Text(value,
                   style: const TextStyle(
-                      color: AppTheme.textPrimary, fontSize: 12))),
+                      color: AppTheme.onSurface, fontSize: 12))),
         ],
       ),
     );

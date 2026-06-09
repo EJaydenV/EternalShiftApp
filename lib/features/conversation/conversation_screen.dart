@@ -14,7 +14,8 @@ class ConversationScreen extends ConsumerStatefulWidget {
   const ConversationScreen({super.key, required this.sessionId});
 
   @override
-  ConsumerState<ConversationScreen> createState() => _ConversationScreenState();
+  ConsumerState<ConversationScreen> createState() =>
+      _ConversationScreenState();
 }
 
 class _ConversationScreenState extends ConsumerState<ConversationScreen> {
@@ -43,8 +44,8 @@ class _ConversationScreenState extends ConsumerState<ConversationScreen> {
       ref.invalidate(sessionConversationProvider(widget.sessionId));
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error: $e')));
+        ScaffoldMessenger.of(context)
+            .showSnackBar(SnackBar(content: Text('Error: $e')));
       }
     } finally {
       if (mounted) setState(() => _sending = false);
@@ -59,12 +60,12 @@ class _ConversationScreenState extends ConsumerState<ConversationScreen> {
     return Scaffold(
       backgroundColor: AppTheme.background,
       appBar: AppBar(
-        title: const Text('Conversation'),
+        title: const Text('Timeline'),
         actions: [
           IconButton(
             icon: const Icon(Icons.refresh_rounded),
-            onPressed: () =>
-                ref.invalidate(sessionConversationProvider(widget.sessionId)),
+            onPressed: () => ref.invalidate(
+                sessionConversationProvider(widget.sessionId)),
           ),
         ],
       ),
@@ -88,7 +89,7 @@ class _ConversationScreenState extends ConsumerState<ConversationScreen> {
                   );
                 }
                 return ListView.builder(
-                  padding: const EdgeInsets.symmetric(vertical: 8),
+                  padding: const EdgeInsets.symmetric(vertical: 12),
                   itemCount: list.length,
                   itemBuilder: (_, i) => _EventCard(event: list[i]),
                 );
@@ -103,10 +104,11 @@ class _ConversationScreenState extends ConsumerState<ConversationScreen> {
 
   Widget _buildComposer() {
     return Container(
-      padding: const EdgeInsets.fromLTRB(12, 8, 12, 16),
+      padding: const EdgeInsets.fromLTRB(12, 10, 12, 20),
       decoration: const BoxDecoration(
-        color: AppTheme.surface,
-        border: Border(top: BorderSide(color: AppTheme.divider)),
+        color: AppTheme.surfaceContainerLowest,
+        border: Border(
+            top: BorderSide(color: AppTheme.outlineVariant, width: 1)),
       ),
       child: Column(
         children: [
@@ -115,19 +117,25 @@ class _ConversationScreenState extends ConsumerState<ConversationScreen> {
               Expanded(
                 child: DropdownButtonFormField<String>(
                   value: _messageType,
-                  dropdownColor: AppTheme.card,
+                  dropdownColor: AppTheme.surfaceContainerHigh,
                   isDense: true,
                   decoration: const InputDecoration(
                     labelText: 'Type',
                     contentPadding:
                         EdgeInsets.symmetric(horizontal: 10, vertical: 8),
                   ),
-                  items: ['note', 'comment', 'feedback', 'answer', 'important_note']
+                  items: [
+                    'note',
+                    'comment',
+                    'feedback',
+                    'answer',
+                    'important_note'
+                  ]
                       .map((t) => DropdownMenuItem(
                           value: t,
                           child: Text(t,
                               style: const TextStyle(
-                                  color: AppTheme.textPrimary, fontSize: 12))))
+                                  color: AppTheme.onSurface, fontSize: 12))))
                       .toList(),
                   onChanged: (v) => setState(() => _messageType = v!),
                 ),
@@ -136,7 +144,7 @@ class _ConversationScreenState extends ConsumerState<ConversationScreen> {
               Expanded(
                 child: DropdownButtonFormField<String>(
                   value: _targetRole,
-                  dropdownColor: AppTheme.card,
+                  dropdownColor: AppTheme.surfaceContainerHigh,
                   isDense: true,
                   decoration: const InputDecoration(
                     labelText: 'To',
@@ -148,7 +156,7 @@ class _ConversationScreenState extends ConsumerState<ConversationScreen> {
                           value: r,
                           child: Text(r,
                               style: const TextStyle(
-                                  color: AppTheme.textPrimary, fontSize: 12))))
+                                  color: AppTheme.onSurface, fontSize: 12))))
                       .toList(),
                   onChanged: (v) => setState(() => _targetRole = v!),
                 ),
@@ -161,11 +169,11 @@ class _ConversationScreenState extends ConsumerState<ConversationScreen> {
               Expanded(
                 child: TextFormField(
                   controller: _ctrl,
-                  style: const TextStyle(color: AppTheme.textPrimary, fontSize: 13),
+                  style: const TextStyle(
+                      color: AppTheme.onSurface, fontSize: 13),
                   maxLines: 2,
                   decoration: const InputDecoration(
                     hintText: 'Add note or feedback…',
-                    border: OutlineInputBorder(),
                     contentPadding:
                         EdgeInsets.symmetric(horizontal: 12, vertical: 10),
                   ),
@@ -179,11 +187,11 @@ class _ConversationScreenState extends ConsumerState<ConversationScreen> {
                         width: 16,
                         height: 16,
                         child: CircularProgressIndicator(
-                            strokeWidth: 2, color: Colors.white))
+                            strokeWidth: 2, color: AppTheme.onPrimary))
                     : const Icon(Icons.send_rounded),
                 style: IconButton.styleFrom(
-                    backgroundColor: AppTheme.accentBlue,
-                    foregroundColor: Colors.white),
+                    backgroundColor: AppTheme.primary,
+                    foregroundColor: AppTheme.onPrimary),
               ),
             ],
           ),
@@ -209,11 +217,12 @@ class _EventCard extends StatelessWidget {
         children: [
           if (!isHuman) ...[
             Container(
-              width: 28,
-              height: 28,
+              width: 30,
+              height: 30,
               decoration: BoxDecoration(
                 color: roleColor.withOpacity(0.15),
                 borderRadius: BorderRadius.circular(8),
+                border: Border.all(color: roleColor.withOpacity(0.3)),
               ),
               child: Icon(roleIcon, color: roleColor, size: 14),
             ),
@@ -235,22 +244,22 @@ class _EventCard extends StatelessWidget {
                       style: TextStyle(
                           color: roleColor,
                           fontSize: 10,
-                          fontWeight: FontWeight.w700),
+                          fontWeight: FontWeight.w700,
+                          letterSpacing: 0.3),
                     ),
                     if (event.cycleId != null) ...[
                       const SizedBox(width: 6),
-                      Text(
-                        'Cycle ${event.cycleId}',
-                        style: const TextStyle(
-                            color: AppTheme.textMuted, fontSize: 10),
-                      ),
+                      Text('Cycle ${event.cycleId}',
+                          style: const TextStyle(
+                              color: AppTheme.outline, fontSize: 10)),
                     ],
                     if (event.timestamp != null) ...[
                       const SizedBox(width: 6),
                       Text(
-                        DateFormat('HH:mm').format(event.timestamp!.toLocal()),
+                        DateFormat('HH:mm')
+                            .format(event.timestamp!.toLocal()),
                         style: const TextStyle(
-                            color: AppTheme.textMuted, fontSize: 10),
+                            color: AppTheme.outline, fontSize: 10),
                       ),
                     ],
                     if (event.status != null) ...[
@@ -264,13 +273,13 @@ class _EventCard extends StatelessWidget {
                   padding: const EdgeInsets.all(10),
                   decoration: BoxDecoration(
                     color: isHuman
-                        ? AppTheme.accentBlue.withOpacity(0.15)
-                        : AppTheme.card,
-                    borderRadius: BorderRadius.circular(10),
+                        ? AppTheme.primary.withOpacity(0.12)
+                        : AppTheme.glassBackground,
+                    borderRadius: BorderRadius.circular(12),
                     border: Border.all(
                         color: isHuman
-                            ? AppTheme.accentBlue.withOpacity(0.3)
-                            : AppTheme.cardBorder),
+                            ? AppTheme.primary.withOpacity(0.3)
+                            : roleColor.withOpacity(0.2)),
                   ),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -278,17 +287,17 @@ class _EventCard extends StatelessWidget {
                       if (event.title != null) ...[
                         Text(
                           event.title!,
-                          style: const TextStyle(
-                              color: AppTheme.textPrimary,
-                              fontSize: 12,
-                              fontWeight: FontWeight.w600),
+                          style: TextStyle(
+                              color: roleColor,
+                              fontSize: 11,
+                              fontWeight: FontWeight.w700),
                         ),
                         const SizedBox(height: 4),
                       ],
                       Text(
                         event.content,
                         style: const TextStyle(
-                            color: AppTheme.textPrimary, fontSize: 12),
+                            color: AppTheme.onSurface, fontSize: 12),
                       ),
                     ],
                   ),
@@ -296,7 +305,7 @@ class _EventCard extends StatelessWidget {
               ],
             ),
           ),
-          if (isHuman) const SizedBox(width: 38),
+          if (isHuman) const SizedBox(width: 40),
         ],
       ),
     );
@@ -305,21 +314,21 @@ class _EventCard extends StatelessWidget {
   static (Color, IconData) _roleStyle(String role) {
     switch (role) {
       case ConversationEvent.roleWorker:
-        return (AppTheme.accentBlue, Icons.engineering_rounded);
+        return (AppTheme.primary, Icons.engineering_rounded);
       case ConversationEvent.roleReviewer:
-        return (AppTheme.accentViolet, Icons.rate_review_rounded);
+        return (AppTheme.secondary, Icons.rate_review_rounded);
       case ConversationEvent.roleSupervisor:
-        return (AppTheme.accentCyan, Icons.supervisor_account_rounded);
+        return (AppTheme.accentViolet, Icons.supervisor_account_rounded);
       case ConversationEvent.roleHuman:
-        return (AppTheme.success, Icons.person_rounded);
+        return (AppTheme.tertiary, Icons.person_rounded);
       case ConversationEvent.roleApprovalGate:
         return (AppTheme.danger, Icons.security_rounded);
       case ConversationEvent.roleValidator:
         return (AppTheme.warning, Icons.verified_rounded);
       case ConversationEvent.roleBrowserSandbox:
-        return (AppTheme.textMuted, Icons.open_in_browser_rounded);
+        return (AppTheme.outline, Icons.open_in_browser_rounded);
       default:
-        return (AppTheme.textMuted, Icons.info_rounded);
+        return (AppTheme.outline, Icons.info_rounded);
     }
   }
 

@@ -72,8 +72,8 @@ class _SessionsScreenState extends ConsumerState<SessionsScreen> {
                   );
                 }
                 return RefreshIndicator(
-                  color: AppTheme.accentBlue,
-                  backgroundColor: AppTheme.card,
+                  color: AppTheme.primary,
+                  backgroundColor: AppTheme.surfaceContainerHigh,
                   onRefresh: () async => ref.invalidate(sessionsProvider),
                   child: ListView.builder(
                     padding: const EdgeInsets.only(top: 8, bottom: 24),
@@ -91,19 +91,21 @@ class _SessionsScreenState extends ConsumerState<SessionsScreen> {
       ),
       floatingActionButton: FloatingActionButton.extended(
         onPressed: () => context.push('/sessions/smart-create'),
-        backgroundColor: AppTheme.accentBlue,
+        backgroundColor: AppTheme.primary,
+        foregroundColor: AppTheme.onPrimary,
         icon: const Icon(Icons.auto_awesome_rounded, size: 18),
-        label: const Text('Smart Session'),
+        label: const Text('Smart Session',
+            style: TextStyle(fontWeight: FontWeight.w600)),
       ),
     );
   }
 
   Widget _buildFilterBar() {
     return SizedBox(
-      height: 44,
+      height: 48,
       child: ListView.separated(
         scrollDirection: Axis.horizontal,
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
         separatorBuilder: (_, __) => const SizedBox(width: 8),
         itemCount: _filters.length,
         itemBuilder: (_, i) {
@@ -112,27 +114,26 @@ class _SessionsScreenState extends ConsumerState<SessionsScreen> {
           return GestureDetector(
             onTap: () => setState(() => _filter = value),
             child: AnimatedContainer(
-              duration: const Duration(milliseconds: 200),
-              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+              duration: const Duration(milliseconds: 180),
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
               decoration: BoxDecoration(
                 color: selected
-                    ? AppTheme.accentBlue
-                    : AppTheme.card,
+                    ? AppTheme.primary.withOpacity(0.15)
+                    : AppTheme.surfaceContainerHigh,
                 borderRadius: BorderRadius.circular(20),
                 border: Border.all(
-                    color: selected
-                        ? AppTheme.accentBlue
-                        : AppTheme.cardBorder),
+                  color: selected ? AppTheme.primary : AppTheme.outlineVariant,
+                  width: selected ? 1.5 : 1,
+                ),
               ),
               child: Text(
                 label,
                 style: TextStyle(
                   color: selected
-                      ? Colors.white
-                      : AppTheme.textSecondary,
+                      ? AppTheme.primary
+                      : AppTheme.onSurfaceVariant,
                   fontSize: 12,
-                  fontWeight:
-                      selected ? FontWeight.w600 : FontWeight.w400,
+                  fontWeight: selected ? FontWeight.w600 : FontWeight.w400,
                 ),
               ),
             ),
@@ -143,9 +144,7 @@ class _SessionsScreenState extends ConsumerState<SessionsScreen> {
   }
 
   List<Session> _applyFilter(List<Session> sessions) {
-    if (_filter == 'all') {
-      return sessions.where((s) => !s.isDeleted).toList();
-    }
+    if (_filter == 'all') return sessions.where((s) => !s.isDeleted).toList();
     return sessions.where((s) => s.status == _filter).toList();
   }
 }
@@ -158,81 +157,90 @@ class _SessionCard extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    return Card(
-      child: InkWell(
-        onTap: () => context.push('/sessions/${session.id}'),
-        borderRadius: BorderRadius.circular(12),
-        child: Padding(
-          padding: const EdgeInsets.all(14),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
+    final statusColor = _statusColor(session.status);
+    return GestureDetector(
+      onTap: () => context.push('/sessions/${session.id}'),
+      child: Container(
+        margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 5),
+        decoration: BoxDecoration(
+          color: AppTheme.glassBackground,
+          borderRadius: BorderRadius.circular(16),
+          border: Border(
+            left: BorderSide(color: statusColor, width: 3),
+            top: const BorderSide(color: AppTheme.glassBorder, width: 1),
+            right: const BorderSide(color: AppTheme.glassBorder, width: 1),
+            bottom: const BorderSide(color: AppTheme.glassBorder, width: 1),
+          ),
+        ),
+        padding: const EdgeInsets.all(14),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Expanded(
+                  child: Text(
+                    session.name,
+                    style: const TextStyle(
+                      color: AppTheme.onSurface,
+                      fontSize: 14,
+                      fontWeight: FontWeight.w600,
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+                const SizedBox(width: 8),
+                StatusBadge(status: session.status),
+              ],
+            ),
+            if (session.objective != null) ...[
+              const SizedBox(height: 6),
+              Text(
+                session.objective!,
+                style: const TextStyle(
+                    color: AppTheme.onSurfaceVariant, fontSize: 12),
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+              ),
+            ],
+            if (session.currentTask != null) ...[
+              const SizedBox(height: 6),
               Row(
                 children: [
+                  const Icon(Icons.arrow_right_rounded,
+                      color: AppTheme.secondary, size: 14),
+                  const SizedBox(width: 4),
                   Expanded(
                     child: Text(
-                      session.name,
+                      session.currentTask!,
                       style: const TextStyle(
-                        color: AppTheme.textPrimary,
-                        fontSize: 14,
-                        fontWeight: FontWeight.w600,
-                      ),
+                          color: AppTheme.secondary, fontSize: 11),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                     ),
                   ),
-                  const SizedBox(width: 8),
-                  StatusBadge(status: session.status),
-                ],
-              ),
-              if (session.objective != null) ...[
-                const SizedBox(height: 6),
-                Text(
-                  session.objective!,
-                  style: const TextStyle(
-                      color: AppTheme.textSecondary, fontSize: 12),
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                ),
-              ],
-              if (session.currentTask != null) ...[
-                const SizedBox(height: 6),
-                Row(
-                  children: [
-                    const Icon(Icons.arrow_right_rounded,
-                        color: AppTheme.accentCyan, size: 14),
-                    const SizedBox(width: 4),
-                    Expanded(
-                      child: Text(
-                        session.currentTask!,
-                        style: const TextStyle(
-                            color: AppTheme.accentCyan, fontSize: 11),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ),
-                  ],
-                ),
-              ],
-              const SizedBox(height: 10),
-              Row(
-                children: [
-                  if (session.provider != null) ...[
-                    _chip(session.provider!, AppTheme.accentViolet),
-                    const SizedBox(width: 6),
-                  ],
-                  if (session.cycleCount != null) ...[
-                    _chip('${session.cycleCount} cycles', AppTheme.textMuted),
-                    const SizedBox(width: 6),
-                  ],
-                  if (session.totalTokens != null)
-                    _chip(_formatTokens(session.totalTokens!), AppTheme.textMuted),
-                  const Spacer(),
-                  _buildActions(context, ref),
                 ],
               ),
             ],
-          ),
+            const SizedBox(height: 10),
+            Row(
+              children: [
+                if (session.provider != null) ...[
+                  _chip(session.provider!, AppTheme.accentViolet),
+                  const SizedBox(width: 6),
+                ],
+                if (session.cycleCount != null) ...[
+                  _chip('${session.cycleCount} cycles', AppTheme.outline),
+                  const SizedBox(width: 6),
+                ],
+                if (session.totalTokens != null)
+                  _chip(_formatTokens(session.totalTokens!), AppTheme.outline),
+                const Spacer(),
+                _buildActions(context, ref),
+              ],
+            ),
+          ],
         ),
       ),
     );
@@ -280,10 +288,12 @@ class _SessionCard extends ConsumerWidget {
     return GestureDetector(
       onTap: onTap,
       child: Container(
+        margin: const EdgeInsets.only(left: 6),
         padding: const EdgeInsets.all(6),
         decoration: BoxDecoration(
           color: color.withOpacity(0.12),
-          borderRadius: BorderRadius.circular(6),
+          borderRadius: BorderRadius.circular(8),
+          border: Border.all(color: color.withOpacity(0.25)),
         ),
         child: Icon(icon, color: color, size: 16),
       ),
@@ -292,15 +302,30 @@ class _SessionCard extends ConsumerWidget {
 
   Widget _chip(String label, Color color) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
       decoration: BoxDecoration(
         color: color.withOpacity(0.1),
-        borderRadius: BorderRadius.circular(4),
+        borderRadius: BorderRadius.circular(6),
       ),
       child: Text(label,
-          style:
-              TextStyle(color: color, fontSize: 10, fontWeight: FontWeight.w500)),
+          style: TextStyle(
+              color: color, fontSize: 10, fontWeight: FontWeight.w500)),
     );
+  }
+
+  Color _statusColor(String status) {
+    switch (status) {
+      case 'running':
+        return AppTheme.success;
+      case 'paused':
+        return AppTheme.warning;
+      case 'blocked':
+        return AppTheme.danger;
+      case 'active':
+        return AppTheme.primary;
+      default:
+        return AppTheme.outline;
+    }
   }
 
   String _formatTokens(int t) {

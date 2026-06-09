@@ -175,7 +175,7 @@ class _MainShellState extends State<MainShell> {
     (path: '/dashboard', icon: Icons.home_rounded, label: 'Dashboard'),
     (path: '/sessions', icon: Icons.layers_rounded, label: 'Sessions'),
     (path: '/approvals', icon: Icons.approval_rounded, label: 'Approvals'),
-    (path: '/questions', icon: Icons.help_outline_rounded, label: 'Questions'),
+    (path: '/proof', icon: Icons.verified_rounded, label: 'Proof'),
     (path: '/settings', icon: Icons.settings_rounded, label: 'Settings'),
   ];
 

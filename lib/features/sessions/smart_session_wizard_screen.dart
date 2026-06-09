@@ -4,7 +4,6 @@ import 'package:go_router/go_router.dart';
 import '../../core/api/providers.dart';
 import '../../core/theme/app_theme.dart';
 import '../../core/widgets/confirm_dialog.dart';
-import '../../core/widgets/section_card.dart';
 import '../../core/widgets/status_badge.dart';
 
 class SmartSessionWizardScreen extends ConsumerStatefulWidget {
@@ -57,7 +56,8 @@ class _SmartSessionWizardScreenState
 
   Future<void> _create({bool andRun = false}) async {
     if (_analysis == null) return;
-    final provider = _analysis!['recommended_provider'] as String? ?? 'mock';
+    final provider =
+        _analysis!['recommended_provider'] as String? ?? 'mock';
     if (provider != 'mock') {
       final ok = await showConfirmDialog(
         context,
@@ -69,13 +69,11 @@ class _SmartSessionWizardScreenState
     }
     setState(() => _creating = true);
     try {
-      final body = {
-        'goal': _goalCtrl.text.trim(),
-        'analysis': _analysis,
-      };
+      final body = {'goal': _goalCtrl.text.trim(), 'analysis': _analysis};
       final client = ref.read(apiClientProvider);
-      final session =
-          andRun ? await client.smartCreateAndRun(body) : await client.smartCreate(body);
+      final session = andRun
+          ? await client.smartCreateAndRun(body)
+          : await client.smartCreate(body);
       if (mounted) {
         ref.invalidate(sessionsProvider);
         context.go('/sessions/${session.id}');
@@ -83,7 +81,7 @@ class _SmartSessionWizardScreenState
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error: ${e.toString()}')));
+            SnackBar(content: Text('Error: ${e.toString()}')));
       }
     } finally {
       if (mounted) setState(() => _creating = false);
@@ -105,6 +103,7 @@ class _SmartSessionWizardScreenState
             if (_analyzing) _buildAnalyzingState(),
             if (_analysis != null) _buildAnalysis(),
             if (_analysis != null) _buildActions(),
+            const SizedBox(height: 24),
           ],
         ),
       ),
@@ -112,67 +111,117 @@ class _SmartSessionWizardScreenState
   }
 
   Widget _buildGoalSection() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        const Text(
-          'What do you want Eternal Shift to do?',
-          style: TextStyle(
-              color: AppTheme.textPrimary,
-              fontSize: 18,
-              fontWeight: FontWeight.w600),
-        ),
-        const SizedBox(height: 8),
-        const Text(
-          'Describe your goal. Eternal Shift will analyze it and create a smart session plan.',
-          style: TextStyle(color: AppTheme.textSecondary, fontSize: 13),
-        ),
-        const SizedBox(height: 16),
-        TextFormField(
-          controller: _goalCtrl,
-          style: const TextStyle(color: AppTheme.textPrimary),
-          maxLines: 4,
-          decoration: const InputDecoration(
-            hintText:
-                'e.g. Create a website for my business. Generate ethical income. Build an app.',
-            border: OutlineInputBorder(),
+    return Container(
+      decoration: AppTheme.glassCard(),
+      padding: const EdgeInsets.all(20),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text(
+            'What do you want Eternal Shift to do?',
+            style: TextStyle(
+                color: AppTheme.onSurface,
+                fontSize: 18,
+                fontWeight: FontWeight.w700,
+                letterSpacing: -0.3),
           ),
-        ),
-        const SizedBox(height: 12),
-        Wrap(
-          spacing: 8,
-          runSpacing: 6,
-          children: _examples
-              .map((e) => GestureDetector(
-                    onTap: () => setState(() => _goalCtrl.text = e),
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 10, vertical: 5),
-                      decoration: BoxDecoration(
-                        color: AppTheme.surface,
-                        borderRadius: BorderRadius.circular(6),
-                        border: Border.all(color: AppTheme.cardBorder),
+          const SizedBox(height: 6),
+          const Text(
+            'Describe your goal and the AI will create a smart session plan.',
+            style: TextStyle(color: AppTheme.outline, fontSize: 13),
+          ),
+          const SizedBox(height: 16),
+          TextFormField(
+            controller: _goalCtrl,
+            style: const TextStyle(color: AppTheme.onSurface),
+            maxLines: 5,
+            decoration: const InputDecoration(
+              hintText:
+                  'e.g. Create a website for my business. Build an app. Research a topic.',
+            ),
+          ),
+          const SizedBox(height: 14),
+          const Text(
+            'EXAMPLES',
+            style: TextStyle(
+              color: AppTheme.outline,
+              fontSize: 10,
+              fontWeight: FontWeight.w600,
+              letterSpacing: 0.8,
+            ),
+          ),
+          const SizedBox(height: 8),
+          Wrap(
+            spacing: 8,
+            runSpacing: 6,
+            children: _examples
+                .map((e) => GestureDetector(
+                      onTap: () => setState(() => _goalCtrl.text = e),
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 10, vertical: 5),
+                        decoration: BoxDecoration(
+                          color: AppTheme.surfaceContainerHigh,
+                          borderRadius: BorderRadius.circular(8),
+                          border:
+                              Border.all(color: AppTheme.outlineVariant),
+                        ),
+                        child: Text(e,
+                            style: const TextStyle(
+                                color: AppTheme.onSurfaceVariant,
+                                fontSize: 11)),
                       ),
-                      child: Text(e,
-                          style: const TextStyle(
-                              color: AppTheme.textMuted, fontSize: 11)),
-                    ),
-                  ))
-              .toList(),
-        ),
-        const SizedBox(height: 16),
-        ElevatedButton.icon(
-          onPressed: _analyzing ? null : _analyze,
-          icon: _analyzing
-              ? const SizedBox(
-                  width: 14,
-                  height: 14,
-                  child: CircularProgressIndicator(
-                      strokeWidth: 2, color: Colors.white))
-              : const Icon(Icons.search_rounded, size: 16),
-          label: Text(_analyzing ? 'Analyzing…' : 'Analyze Goal'),
-        ),
-      ],
+                    ))
+                .toList(),
+          ),
+          const SizedBox(height: 16),
+          SizedBox(
+            width: double.infinity,
+            child: GestureDetector(
+              onTap: _analyzing ? null : _analyze,
+              child: Container(
+                height: 50,
+                decoration: BoxDecoration(
+                  gradient:
+                      _analyzing ? null : AppTheme.primaryGradient,
+                  color: _analyzing
+                      ? AppTheme.surfaceContainerHigh
+                      : null,
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Center(
+                  child: _analyzing
+                      ? const Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            SizedBox(
+                              width: 14,
+                              height: 14,
+                              child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                  color: AppTheme.onPrimary),
+                            ),
+                            SizedBox(width: 10),
+                            Text('Analyzing…',
+                                style: TextStyle(
+                                    color: AppTheme.onPrimary,
+                                    fontWeight: FontWeight.w600)),
+                          ],
+                        )
+                      : const Text(
+                          'Analyze Goal',
+                          style: TextStyle(
+                            color: AppTheme.onPrimary,
+                            fontSize: 15,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
     );
   }
 
@@ -180,27 +229,37 @@ class _SmartSessionWizardScreenState
     return Padding(
       padding: const EdgeInsets.only(top: 12),
       child: Container(
-        padding: const EdgeInsets.all(12),
-        decoration: BoxDecoration(
-          color: AppTheme.danger.withOpacity(0.1),
-          borderRadius: BorderRadius.circular(8),
-          border: Border.all(color: AppTheme.danger.withOpacity(0.3)),
+        padding: const EdgeInsets.all(14),
+        decoration: AppTheme.glassCard(
+            radius: 12,
+            borderColor: AppTheme.danger.withOpacity(0.4)),
+        child: Row(
+          children: [
+            const Icon(Icons.error_outline_rounded,
+                color: AppTheme.danger, size: 16),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Text(_errorMsg!,
+                  style: const TextStyle(
+                      color: AppTheme.danger, fontSize: 12)),
+            ),
+          ],
         ),
-        child: Text(_errorMsg!,
-            style: const TextStyle(color: AppTheme.danger, fontSize: 12)),
       ),
     );
   }
 
   Widget _buildAnalyzingState() {
     return const Padding(
-      padding: EdgeInsets.symmetric(vertical: 24),
+      padding: EdgeInsets.symmetric(vertical: 32),
       child: Column(
         children: [
-          CircularProgressIndicator(color: AppTheme.accentBlue, strokeWidth: 2),
-          SizedBox(height: 12),
+          CircularProgressIndicator(
+              color: AppTheme.primary, strokeWidth: 2),
+          SizedBox(height: 16),
           Text('Analyzing your goal…',
-              style: TextStyle(color: AppTheme.textSecondary, fontSize: 13)),
+              style: TextStyle(
+                  color: AppTheme.onSurfaceVariant, fontSize: 14)),
         ],
       ),
     );
@@ -214,36 +273,40 @@ class _SmartSessionWizardScreenState
     final provider = a['recommended_provider'] as String? ?? '—';
     final tasks = (a['first_tasks'] as List?)?.cast<String>() ?? [];
     final assumptions = (a['assumptions'] as List?)?.cast<String>() ?? [];
-    final warnings = (a['approval_warnings'] as List?)?.cast<String>() ?? [];
+    final warnings =
+        (a['approval_warnings'] as List?)?.cast<String>() ?? [];
 
     return Column(
       children: [
-        const SizedBox(height: 20),
-        SectionCard(
-          title: 'ANALYSIS',
+        const SizedBox(height: 16),
+        _analysisCard(
+          title: 'INTENT ANALYSIS',
           child: Column(
             children: [
               _analysisRow('Session Type', sessionType),
-              _analysisRow('Confidence',
+              _analysisRow(
+                  'Confidence',
                   '${(confidence * 100).toStringAsFixed(0)}%'),
-              Row(
-                children: [
-                  const SizedBox(
-                    width: 130,
-                    child: Text('Risk Level',
-                        style: TextStyle(
-                            color: AppTheme.textMuted, fontSize: 12)),
-                  ),
-                  StatusBadge(status: riskLevel),
-                ],
+              _analysisRow('Provider', provider),
+              Padding(
+                padding: const EdgeInsets.symmetric(vertical: 4),
+                child: Row(
+                  children: [
+                    const SizedBox(
+                      width: 130,
+                      child: Text('Risk Level',
+                          style: TextStyle(
+                              color: AppTheme.outline, fontSize: 12)),
+                    ),
+                    StatusBadge(status: riskLevel),
+                  ],
+                ),
               ),
-              const SizedBox(height: 5),
-              _analysisRow('Recommended Provider', provider),
             ],
           ),
         ),
         if (tasks.isNotEmpty)
-          SectionCard(
+          _analysisCard(
             title: 'FIRST TASKS',
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -253,14 +316,15 @@ class _SmartSessionWizardScreenState
                         child: Row(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            const Text('• ',
+                            const Text('·  ',
                                 style: TextStyle(
-                                    color: AppTheme.accentBlue,
-                                    fontSize: 12)),
+                                    color: AppTheme.primary,
+                                    fontSize: 14,
+                                    fontWeight: FontWeight.w700)),
                             Expanded(
                                 child: Text(t,
                                     style: const TextStyle(
-                                        color: AppTheme.textPrimary,
+                                        color: AppTheme.onSurface,
                                         fontSize: 12))),
                           ],
                         ),
@@ -269,23 +333,25 @@ class _SmartSessionWizardScreenState
             ),
           ),
         if (assumptions.isNotEmpty)
-          SectionCard(
+          _analysisCard(
             title: 'ASSUMPTIONS',
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: assumptions
-                  .map((a) => Padding(
+                  .map((s) => Padding(
                         padding: const EdgeInsets.symmetric(vertical: 3),
-                        child: Text('• $a',
+                        child: Text('· $s',
                             style: const TextStyle(
-                                color: AppTheme.textSecondary, fontSize: 12)),
+                                color: AppTheme.onSurfaceVariant,
+                                fontSize: 12)),
                       ))
                   .toList(),
             ),
           ),
         if (warnings.isNotEmpty)
-          SectionCard(
+          _analysisCard(
             title: 'APPROVAL WARNINGS',
+            borderColor: AppTheme.warning.withOpacity(0.4),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: warnings
@@ -312,6 +378,34 @@ class _SmartSessionWizardScreenState
     );
   }
 
+  Widget _analysisCard({
+    required String title,
+    required Widget child,
+    Color? borderColor,
+  }) {
+    return Container(
+      margin: const EdgeInsets.only(top: 10),
+      decoration: AppTheme.glassCard(borderColor: borderColor),
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            title,
+            style: const TextStyle(
+              color: AppTheme.outline,
+              fontSize: 10,
+              fontWeight: FontWeight.w600,
+              letterSpacing: 0.8,
+            ),
+          ),
+          const SizedBox(height: 12),
+          child,
+        ],
+      ),
+    );
+  }
+
   Widget _analysisRow(String label, String value) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 4),
@@ -321,12 +415,12 @@ class _SmartSessionWizardScreenState
             width: 130,
             child: Text(label,
                 style: const TextStyle(
-                    color: AppTheme.textMuted, fontSize: 12)),
+                    color: AppTheme.outline, fontSize: 12)),
           ),
           Expanded(
             child: Text(value,
                 style: const TextStyle(
-                    color: AppTheme.textPrimary,
+                    color: AppTheme.onSurface,
                     fontSize: 12,
                     fontWeight: FontWeight.w500)),
           ),
@@ -337,7 +431,7 @@ class _SmartSessionWizardScreenState
 
   Widget _buildActions() {
     return Padding(
-      padding: const EdgeInsets.only(top: 8, bottom: 24),
+      padding: const EdgeInsets.only(top: 12),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [

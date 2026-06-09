@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 import '../../core/api/providers.dart';
 import '../../core/models/approval.dart';
@@ -21,7 +20,7 @@ class ApprovalsScreen extends ConsumerWidget {
     return Scaffold(
       backgroundColor: AppTheme.background,
       appBar: AppBar(
-        title: const Text('Approvals'),
+        title: const Text('Action Inbox'),
         actions: [
           IconButton(
             icon: const Icon(Icons.refresh_rounded),
@@ -34,25 +33,24 @@ class ApprovalsScreen extends ConsumerWidget {
         error: (e, _) => ErrorState(
             error: e, onRetry: () => ref.invalidate(approvalsProvider)),
         data: (approvals) {
-          final pending =
-              approvals.where((a) => a.isPending).toList();
+          final pending = approvals.where((a) => a.isPending).toList();
           final resolved = approvals
               .where((a) => !a.isPending)
               .toList()
-            ..sort((a, b) =>
-                (b.resolvedAt ?? DateTime(0)).compareTo(a.resolvedAt ?? DateTime(0)));
+            ..sort((a, b) => (b.resolvedAt ?? DateTime(0))
+                .compareTo(a.resolvedAt ?? DateTime(0)));
 
           if (approvals.isEmpty) {
             return const EmptyState(
               icon: Icons.check_circle_outline_rounded,
-              title: 'No approvals',
-              subtitle: 'All clear — no pending approvals.',
+              title: 'All clear',
+              subtitle: 'No pending approvals.',
             );
           }
 
           return RefreshIndicator(
-            color: AppTheme.accentBlue,
-            backgroundColor: AppTheme.card,
+            color: AppTheme.primary,
+            backgroundColor: AppTheme.surfaceContainerHigh,
             onRefresh: () async => ref.invalidate(approvalsProvider),
             child: ListView(
               padding: const EdgeInsets.only(bottom: 24),
@@ -81,11 +79,11 @@ class ApprovalsScreen extends ConsumerWidget {
 
   Widget _sectionHeader(String title) {
     return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 16, 16, 6),
+      padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
       child: Text(
         title,
         style: const TextStyle(
-          color: AppTheme.textMuted,
+          color: AppTheme.outline,
           fontSize: 11,
           fontWeight: FontWeight.w600,
           letterSpacing: 0.8,
@@ -144,7 +142,8 @@ class _ApprovalCardState extends ConsumerState<_ApprovalCard> {
     final ok = await showConfirmDialog(
       context,
       title: 'Reject This Action?',
-      message: 'The session will be informed and will not proceed with this action.',
+      message:
+          'The session will be informed and will not proceed with this action.',
       isDangerous: true,
       confirmLabel: 'Reject',
     );
@@ -166,134 +165,182 @@ class _ApprovalCardState extends ConsumerState<_ApprovalCard> {
   @override
   Widget build(BuildContext context) {
     final a = widget.approval;
+    final isPending = a.isPending;
+    final accentColor = isPending ? AppTheme.warning : AppTheme.outline;
 
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(14),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                Icon(
-                  Icons.security_rounded,
-                  color: a.isPending ? AppTheme.danger : AppTheme.textMuted,
-                  size: 16,
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 5),
+      decoration: BoxDecoration(
+        color: AppTheme.glassBackground,
+        borderRadius: BorderRadius.circular(16),
+        border: Border(
+          left: BorderSide(color: accentColor, width: 3),
+          top: BorderSide(color: accentColor.withOpacity(0.3), width: 1),
+          right: BorderSide(color: accentColor.withOpacity(0.3), width: 1),
+          bottom: BorderSide(color: accentColor.withOpacity(0.3), width: 1),
+        ),
+      ),
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Container(
+                padding: const EdgeInsets.all(6),
+                decoration: BoxDecoration(
+                  color: accentColor.withOpacity(0.12),
+                  borderRadius: BorderRadius.circular(8),
                 ),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: Text(
-                    a.requestedAction,
-                    style: const TextStyle(
-                      color: AppTheme.textPrimary,
-                      fontSize: 13,
-                      fontWeight: FontWeight.w600,
+                child: Icon(Icons.security_rounded,
+                    color: accentColor, size: 16),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      a.requestedAction,
+                      style: const TextStyle(
+                        color: AppTheme.onSurface,
+                        fontSize: 13,
+                        fontWeight: FontWeight.w600,
+                      ),
                     ),
-                  ),
+                    if (a.reason != null) ...[
+                      const SizedBox(height: 4),
+                      Text(
+                        a.reason!,
+                        style: const TextStyle(
+                            color: AppTheme.onSurfaceVariant, fontSize: 12),
+                      ),
+                    ],
+                  ],
                 ),
-                StatusBadge(status: a.status),
-              ],
-            ),
-            if (a.reason != null) ...[
-              const SizedBox(height: 8),
-              Text(a.reason!,
-                  style: const TextStyle(
-                      color: AppTheme.textSecondary, fontSize: 12)),
+              ),
+              const SizedBox(width: 8),
+              StatusBadge(status: a.status),
             ],
-            if (a.riskCategory != null) ...[
-              const SizedBox(height: 6),
-              Row(
+          ),
+          if (a.riskCategory != null) ...[
+            const SizedBox(height: 10),
+            Container(
+              padding:
+                  const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+              decoration: BoxDecoration(
+                color: AppTheme.warning.withOpacity(0.08),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
                 children: [
                   const Icon(Icons.warning_amber_rounded,
                       color: AppTheme.warning, size: 12),
-                  const SizedBox(width: 4),
-                  Text('Risk: ${a.riskCategory}',
-                      style: const TextStyle(
-                          color: AppTheme.warning, fontSize: 11)),
-                ],
-              ),
-            ],
-            if (a.requestedAt != null) ...[
-              const SizedBox(height: 4),
-              Text(
-                'Requested ${DateFormat('MMM d, HH:mm').format(a.requestedAt!.toLocal())}',
-                style: const TextStyle(
-                    color: AppTheme.textMuted, fontSize: 11),
-              ),
-            ],
-            if (a.isPending) ...[
-              const SizedBox(height: 10),
-              _approvalWarning(),
-              const SizedBox(height: 10),
-              TextFormField(
-                controller: _commentCtrl,
-                style: const TextStyle(
-                    color: AppTheme.textPrimary, fontSize: 12),
-                maxLines: 2,
-                decoration: const InputDecoration(
-                  hintText: 'Comment (optional)…',
-                  contentPadding:
-                      EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-                ),
-              ),
-              const SizedBox(height: 10),
-              Row(
-                children: [
-                  Expanded(
-                    child: ElevatedButton(
-                      onPressed: _actioning ? null : _approve,
-                      style: ElevatedButton.styleFrom(
-                          backgroundColor: AppTheme.success),
-                      child: const Text('Approve', style: TextStyle(fontSize: 12)),
-                    ),
-                  ),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: OutlinedButton(
-                      onPressed: _actioning ? null : _reject,
-                      style: OutlinedButton.styleFrom(
-                          foregroundColor: AppTheme.danger,
-                          side: const BorderSide(color: AppTheme.danger)),
-                      child: const Text('Reject', style: TextStyle(fontSize: 12)),
-                    ),
-                  ),
-                  const SizedBox(width: 8),
-                  OutlinedButton(
-                    onPressed: _actioning
-                        ? null
-                        : () async {
-                            await ref
-                                .read(apiClientProvider)
-                                .dismissApproval(a.id);
-                            widget.onRefresh();
-                          },
-                    child: const Text('Dismiss', style: TextStyle(fontSize: 12)),
+                  const SizedBox(width: 6),
+                  Text(
+                    'Risk: ${a.riskCategory}',
+                    style: const TextStyle(
+                        color: AppTheme.warning,
+                        fontSize: 11,
+                        fontWeight: FontWeight.w600),
                   ),
                 ],
               ),
-            ],
+            ),
           ],
-        ),
+          if (a.requestedAt != null) ...[
+            const SizedBox(height: 8),
+            Text(
+              'Requested ${DateFormat('MMM d, HH:mm').format(a.requestedAt!.toLocal())}',
+              style: const TextStyle(color: AppTheme.outline, fontSize: 11),
+            ),
+          ],
+          if (isPending) ...[
+            const SizedBox(height: 14),
+            _approvalWarning(),
+            const SizedBox(height: 12),
+            TextFormField(
+              controller: _commentCtrl,
+              style:
+                  const TextStyle(color: AppTheme.onSurface, fontSize: 13),
+              maxLines: 2,
+              decoration: const InputDecoration(
+                hintText: 'Comment (optional)…',
+                contentPadding:
+                    EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+              ),
+            ),
+            const SizedBox(height: 12),
+            Row(
+              children: [
+                Expanded(
+                  child: ElevatedButton(
+                    onPressed: _actioning ? null : _approve,
+                    style: ElevatedButton.styleFrom(
+                        backgroundColor: AppTheme.success,
+                        foregroundColor: Colors.white,
+                        padding:
+                            const EdgeInsets.symmetric(vertical: 12)),
+                    child: const Text('Approve',
+                        style: TextStyle(
+                            fontSize: 13, fontWeight: FontWeight.w600)),
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: OutlinedButton(
+                    onPressed: _actioning ? null : _reject,
+                    style: OutlinedButton.styleFrom(
+                        foregroundColor: AppTheme.danger,
+                        side: const BorderSide(color: AppTheme.danger),
+                        padding:
+                            const EdgeInsets.symmetric(vertical: 12)),
+                    child: const Text('Deny',
+                        style: TextStyle(
+                            fontSize: 13, fontWeight: FontWeight.w600)),
+                  ),
+                ),
+                const SizedBox(width: 8),
+                OutlinedButton(
+                  onPressed: _actioning
+                      ? null
+                      : () async {
+                          await ref
+                              .read(apiClientProvider)
+                              .dismissApproval(a.id);
+                          widget.onRefresh();
+                        },
+                  style: OutlinedButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 12, vertical: 12)),
+                  child: const Text('Skip', style: TextStyle(fontSize: 12)),
+                ),
+              ],
+            ),
+          ],
+        ],
       ),
     );
   }
 
   Widget _approvalWarning() {
     return Container(
-      padding: const EdgeInsets.all(10),
+      padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: AppTheme.warning.withOpacity(0.08),
-        borderRadius: BorderRadius.circular(8),
+        color: AppTheme.warning.withOpacity(0.06),
+        borderRadius: BorderRadius.circular(10),
         border: Border.all(color: AppTheme.warning.withOpacity(0.25)),
       ),
       child: const Row(
         children: [
           Icon(Icons.info_outline_rounded,
-              color: AppTheme.warning, size: 13),
+              color: AppTheme.warning, size: 14),
           SizedBox(width: 8),
           Expanded(
             child: Text(
-              'Approving does not instantly execute the action. It lets the next safe server-side cycle continue.',
+              'Approving does not instantly execute the action — it lets the next safe server-side cycle continue.',
               style: TextStyle(color: AppTheme.warning, fontSize: 11),
             ),
           ),

@@ -2,14 +2,11 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:intl/intl.dart';
 import '../../core/api/providers.dart';
 import '../../core/models/system_status.dart';
 import '../../core/theme/app_theme.dart';
 import '../../core/widgets/error_state.dart';
 import '../../core/widgets/loading_state.dart';
-import '../../core/widgets/metric_card.dart';
-import '../../core/widgets/section_card.dart';
 import '../../core/widgets/status_badge.dart';
 
 class DashboardScreen extends ConsumerStatefulWidget {
@@ -50,147 +47,167 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
 
     return Scaffold(
       backgroundColor: AppTheme.background,
-      appBar: AppBar(
-        title: const Text('Dashboard'),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.add_rounded),
-            tooltip: 'New Session',
-            onPressed: () => context.push('/sessions/smart-create'),
-          ),
-          IconButton(
-            icon: const Icon(Icons.refresh_rounded),
-            tooltip: 'Refresh',
-            onPressed: _refresh,
-          ),
-        ],
-      ),
       body: homeAsync.when(
-        loading: () => const LoadingState(message: 'Loading dashboard…'),
+        loading: () => const LoadingState(message: 'Loading…'),
         error: (e, _) => ErrorState(error: e, onRetry: _refresh),
-        data: (home) => _buildDashboard(home),
+        data: (home) => _buildBody(home),
       ),
     );
   }
 
-  Widget _buildDashboard(MobileHomeData home) {
+  Widget _buildBody(MobileHomeData home) {
     final status = home.systemStatus;
     final sessions = home.activeSessions ?? [];
     final attentionItems = home.attentionItems ?? [];
 
     return RefreshIndicator(
-      color: AppTheme.accentBlue,
-      backgroundColor: AppTheme.card,
+      color: AppTheme.primary,
+      backgroundColor: AppTheme.surfaceContainerHigh,
       onRefresh: () async => _refresh(),
-      child: ListView(
-        padding: const EdgeInsets.only(top: 12, bottom: 24),
-        children: [
-          if (status != null) _buildStatusRow(status),
-          const SizedBox(height: 8),
-          _buildMetricsGrid(status, home),
-          const SizedBox(height: 8),
+      child: CustomScrollView(
+        slivers: [
+          SliverToBoxAdapter(child: _buildHeader(status)),
+          SliverToBoxAdapter(child: _buildStatRow(status, home)),
           if ((home.pendingApprovals ?? 0) > 0 ||
               (home.pendingQuestions ?? 0) > 0)
-            _buildAttentionBanner(home),
-          if (sessions.isNotEmpty) _buildActiveSessions(sessions),
-          if (attentionItems.isNotEmpty) _buildAttentionItems(attentionItems),
-          _buildQuickActions(),
+            SliverToBoxAdapter(child: _buildAttentionBanner(home)),
+          SliverToBoxAdapter(child: _buildQuickActions()),
+          if (sessions.isNotEmpty)
+            SliverToBoxAdapter(child: _buildActiveSessions(sessions)),
+          if (attentionItems.isNotEmpty)
+            SliverToBoxAdapter(child: _buildAttentionItems(attentionItems)),
+          const SliverToBoxAdapter(child: SizedBox(height: 32)),
         ],
       ),
     );
   }
 
-  Widget _buildStatusRow(SystemStatus status) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-      child: Row(
-        children: [
-          Container(
-            width: 8,
-            height: 8,
-            decoration: BoxDecoration(
-              color: status.healthy ? AppTheme.success : AppTheme.danger,
-              shape: BoxShape.circle,
+  Widget _buildHeader(SystemStatus? status) {
+    final healthy = status?.healthy ?? false;
+
+    return SafeArea(
+      bottom: false,
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(20, 16, 16, 8),
+        child: Row(
+          children: [
+            Container(
+              width: 36,
+              height: 36,
+              decoration: BoxDecoration(
+                gradient: AppTheme.logoGradient,
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: const Center(
+                child: Text(
+                  'E',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 18,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ),
             ),
-          ),
-          const SizedBox(width: 8),
-          Text(
-            status.healthy ? 'Server Connected' : 'Server Issues Detected',
-            style: TextStyle(
-              color: status.healthy ? AppTheme.success : AppTheme.danger,
-              fontSize: 12,
-              fontWeight: FontWeight.w600,
+            const SizedBox(width: 12),
+            const Expanded(
+              child: Text(
+                'Mission Control',
+                style: TextStyle(
+                  color: AppTheme.onSurface,
+                  fontSize: 18,
+                  fontWeight: FontWeight.w700,
+                  letterSpacing: -0.3,
+                ),
+              ),
             ),
-          ),
-          if (status.version != null) ...[
-            const SizedBox(width: 8),
-            Text('v${status.version}',
-                style: const TextStyle(
-                    color: AppTheme.textMuted, fontSize: 11)),
+            Container(
+              width: 8,
+              height: 8,
+              margin: const EdgeInsets.only(right: 12),
+              decoration: BoxDecoration(
+                color: healthy ? AppTheme.success : AppTheme.danger,
+                shape: BoxShape.circle,
+                boxShadow: [
+                  BoxShadow(
+                    color: (healthy ? AppTheme.success : AppTheme.danger)
+                        .withOpacity(0.6),
+                    blurRadius: 6,
+                    spreadRadius: 1,
+                  ),
+                ],
+              ),
+            ),
+            IconButton(
+              onPressed: () => context.push('/sessions/smart-create'),
+              icon: const Icon(Icons.add_rounded),
+              style: IconButton.styleFrom(
+                backgroundColor: AppTheme.surfaceContainerHigh,
+                foregroundColor: AppTheme.onSurface,
+              ),
+            ),
+            IconButton(
+              onPressed: _refresh,
+              icon: const Icon(Icons.refresh_rounded),
+              style: IconButton.styleFrom(foregroundColor: AppTheme.outline),
+            ),
           ],
-          const Spacer(),
-          Text(
-            DateFormat('HH:mm').format(DateTime.now()),
-            style: const TextStyle(color: AppTheme.textMuted, fontSize: 11),
-          ),
-        ],
+        ),
       ),
     );
   }
 
-  Widget _buildMetricsGrid(SystemStatus? status, MobileHomeData home) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16),
-      child: GridView.count(
-        crossAxisCount: 2,
-        mainAxisSpacing: 10,
-        crossAxisSpacing: 10,
-        childAspectRatio: 1.6,
-        shrinkWrap: true,
-        physics: const NeverScrollableScrollPhysics(),
+  Widget _buildStatRow(SystemStatus? status, MobileHomeData home) {
+    final stats = [
+      _Stat('Total Sessions',
+          '${(status?.activeSessions ?? 0) + (status?.completedSessions ?? 0)}',
+          AppTheme.primary),
+      _Stat('Active', '${status?.activeSessions ?? 0}', AppTheme.secondary),
+      _Stat('Running', '${status?.runningSessions ?? 0}', AppTheme.success),
+      _Stat('Cycles Today', '${status?.cyclesToday ?? 0}', AppTheme.tertiary),
+      _Stat('Pending', '${home.pendingApprovals ?? 0}', AppTheme.warning),
+    ];
+
+    return SizedBox(
+      height: 88,
+      child: ListView.separated(
+        scrollDirection: Axis.horizontal,
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        separatorBuilder: (_, __) => const SizedBox(width: 10),
+        itemCount: stats.length,
+        itemBuilder: (_, i) => _buildStatCard(stats[i]),
+      ),
+    );
+  }
+
+  Widget _buildStatCard(_Stat stat) {
+    return Container(
+      width: 110,
+      decoration: AppTheme.glassCard(radius: 12),
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          MetricCard(
-            label: 'ACTIVE SESSIONS',
-            value: '${status?.activeSessions ?? 0}',
-            icon: Icons.layers_rounded,
-            valueColor: AppTheme.accentBlue,
-            onTap: () => context.go('/sessions'),
+          Text(
+            stat.value,
+            style: TextStyle(
+              color: stat.color,
+              fontSize: 22,
+              fontWeight: FontWeight.w700,
+              letterSpacing: -0.5,
+            ),
           ),
-          MetricCard(
-            label: 'RUNNING NOW',
-            value: '${status?.runningSessions ?? 0}',
-            icon: Icons.play_circle_rounded,
-            valueColor: AppTheme.accentCyan,
-            onTap: () => context.go('/sessions'),
-          ),
-          MetricCard(
-            label: 'PENDING APPROVALS',
-            value: '${home.pendingApprovals ?? status?.pendingApprovals ?? 0}',
-            icon: Icons.approval_rounded,
-            valueColor: (home.pendingApprovals ?? 0) > 0
-                ? AppTheme.danger
-                : AppTheme.textPrimary,
-            onTap: () => context.go('/approvals'),
-          ),
-          MetricCard(
-            label: 'PENDING QUESTIONS',
-            value: '${home.pendingQuestions ?? status?.pendingQuestions ?? 0}',
-            icon: Icons.help_outline_rounded,
-            valueColor: (home.pendingQuestions ?? 0) > 0
-                ? AppTheme.warning
-                : AppTheme.textPrimary,
-            onTap: () => context.go('/questions'),
-          ),
-          MetricCard(
-            label: 'CYCLES TODAY',
-            value: '${status?.cyclesToday ?? 0}',
-            icon: Icons.loop_rounded,
-          ),
-          MetricCard(
-            label: 'TOKENS TODAY',
-            value: _formatTokens(status?.tokensToday ?? 0),
-            icon: Icons.toll_rounded,
-            onTap: () => context.push('/tokens'),
+          const SizedBox(height: 2),
+          Text(
+            stat.label,
+            style: const TextStyle(
+              color: AppTheme.outline,
+              fontSize: 10,
+              fontWeight: FontWeight.w500,
+            ),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
           ),
         ],
       ),
@@ -201,35 +218,114 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
     final approvals = home.pendingApprovals ?? 0;
     final questions = home.pendingQuestions ?? 0;
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+      padding: const EdgeInsets.fromLTRB(16, 4, 16, 4),
       child: Container(
-        padding: const EdgeInsets.all(14),
-        decoration: BoxDecoration(
-          color: AppTheme.danger.withOpacity(0.1),
-          borderRadius: BorderRadius.circular(10),
-          border: Border.all(color: AppTheme.danger.withOpacity(0.35)),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        decoration: AppTheme.glassCard(
+          radius: 12,
+          borderColor: AppTheme.warning.withOpacity(0.5),
         ),
         child: Row(
           children: [
-            const Icon(Icons.notifications_active_rounded,
-                color: AppTheme.danger, size: 20),
-            const SizedBox(width: 10),
+            Container(
+              padding: const EdgeInsets.all(6),
+              decoration: BoxDecoration(
+                color: AppTheme.warning.withOpacity(0.15),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: const Icon(Icons.notifications_active_rounded,
+                  color: AppTheme.warning, size: 16),
+            ),
+            const SizedBox(width: 12),
             Expanded(
               child: Text(
                 [
-                  if (approvals > 0) '$approvals approval${approvals > 1 ? 's' : ''} pending',
-                  if (questions > 0) '$questions question${questions > 1 ? 's' : ''} waiting',
+                  if (approvals > 0)
+                    '$approvals approval${approvals > 1 ? 's' : ''} pending',
+                  if (questions > 0)
+                    '$questions question${questions > 1 ? 's' : ''} waiting',
                 ].join(' · '),
                 style: const TextStyle(
-                    color: AppTheme.danger,
+                    color: AppTheme.onSurface,
                     fontSize: 13,
-                    fontWeight: FontWeight.w600),
+                    fontWeight: FontWeight.w500),
               ),
             ),
             TextButton(
               onPressed: () => context.go('/approvals'),
               child: const Text('Review',
-                  style: TextStyle(color: AppTheme.danger, fontSize: 13)),
+                  style: TextStyle(color: AppTheme.warning, fontSize: 12)),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildQuickActions() {
+    final actions = [
+      _Action('New Session', Icons.auto_awesome_rounded, AppTheme.primary,
+          () => context.push('/sessions/smart-create')),
+      _Action('Approvals', Icons.approval_rounded, AppTheme.danger,
+          () => context.go('/approvals')),
+      _Action('Sessions', Icons.layers_rounded, AppTheme.secondary,
+          () => context.go('/sessions')),
+      _Action('Proof', Icons.verified_rounded, AppTheme.success,
+          () => context.go('/proof')),
+    ];
+
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 12, 16, 4),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Padding(
+            padding: EdgeInsets.only(bottom: 10),
+            child: Text(
+              'QUICK ACTIONS',
+              style: TextStyle(
+                color: AppTheme.outline,
+                fontSize: 11,
+                fontWeight: FontWeight.w600,
+                letterSpacing: 0.8,
+              ),
+            ),
+          ),
+          GridView.count(
+            crossAxisCount: 2,
+            mainAxisSpacing: 10,
+            crossAxisSpacing: 10,
+            childAspectRatio: 2.6,
+            shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
+            children: actions.map(_buildActionButton).toList(),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildActionButton(_Action action) {
+    return GestureDetector(
+      onTap: action.onTap,
+      child: Container(
+        decoration: BoxDecoration(
+          color: action.color.withOpacity(0.08),
+          borderRadius: BorderRadius.circular(12),
+          border:
+              Border.all(color: action.color.withOpacity(0.25), width: 1),
+        ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(action.icon, color: action.color, size: 18),
+            const SizedBox(width: 8),
+            Text(
+              action.label,
+              style: TextStyle(
+                  color: action.color,
+                  fontSize: 13,
+                  fontWeight: FontWeight.w600),
             ),
           ],
         ),
@@ -238,148 +334,185 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
   }
 
   Widget _buildActiveSessions(List<Map<String, dynamic>> sessions) {
-    return SectionCard(
-      title: 'ACTIVE SESSIONS',
-      trailing: TextButton(
-        onPressed: () => context.go('/sessions'),
-        child: const Text('All', style: TextStyle(fontSize: 12)),
-      ),
-      padding: EdgeInsets.zero,
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 16, 16, 4),
       child: Column(
-        children: sessions.take(4).map((s) {
-          final status = s['status'] as String? ?? 'unknown';
-          return ListTile(
-            dense: true,
-            title: Text(
-              s['name'] as String? ?? 'Session',
-              style: const TextStyle(
-                  color: AppTheme.textPrimary,
-                  fontSize: 13,
-                  fontWeight: FontWeight.w500),
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-            ),
-            subtitle: Text(
-              s['current_task'] as String? ?? '',
-              style: const TextStyle(color: AppTheme.textMuted, fontSize: 11),
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-            ),
-            trailing: StatusBadge(status: status),
-            onTap: () => context.push('/sessions/${s['id']}'),
-          );
-        }).toList(),
-      ),
-    );
-  }
-
-  Widget _buildAttentionItems(List<Map<String, dynamic>> items) {
-    return SectionCard(
-      title: 'NEEDS ATTENTION',
-      padding: EdgeInsets.zero,
-      child: Column(
-        children: items.take(3).map((item) {
-          final type = item['type'] as String? ?? 'unknown';
-          return ListTile(
-            dense: true,
-            leading: Icon(
-              type == 'approval'
-                  ? Icons.approval_rounded
-                  : Icons.help_outline_rounded,
-              color: type == 'approval' ? AppTheme.danger : AppTheme.warning,
-              size: 18,
-            ),
-            title: Text(
-              item['title'] as String? ?? item['message'] as String? ?? 'Attention needed',
-              style: const TextStyle(color: AppTheme.textPrimary, fontSize: 13),
-              maxLines: 2,
-              overflow: TextOverflow.ellipsis,
-            ),
-            onTap: () {
-              if (type == 'approval') {
-                context.go('/approvals');
-              } else {
-                context.go('/questions');
-              }
-            },
-          );
-        }).toList(),
-      ),
-    );
-  }
-
-  Widget _buildQuickActions() {
-    return SectionCard(
-      title: 'QUICK ACTIONS',
-      child: Wrap(
-        spacing: 10,
-        runSpacing: 10,
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          _actionChip(
-            Icons.add_circle_rounded,
-            'New Session',
-            AppTheme.accentBlue,
-            () => context.push('/sessions/smart-create'),
+          Row(
+            children: [
+              const Expanded(
+                child: Text(
+                  'ACTIVE SESSIONS',
+                  style: TextStyle(
+                    color: AppTheme.outline,
+                    fontSize: 11,
+                    fontWeight: FontWeight.w600,
+                    letterSpacing: 0.8,
+                  ),
+                ),
+              ),
+              TextButton(
+                onPressed: () => context.go('/sessions'),
+                style: TextButton.styleFrom(
+                    padding: EdgeInsets.zero,
+                    minimumSize: Size.zero,
+                    tapTargetSize: MaterialTapTargetSize.shrinkWrap),
+                child: const Text('All →',
+                    style: TextStyle(fontSize: 12, color: AppTheme.primary)),
+              ),
+            ],
           ),
-          _actionChip(
-            Icons.approval_rounded,
-            'Approvals',
-            AppTheme.danger,
-            () => context.go('/approvals'),
-          ),
-          _actionChip(
-            Icons.help_outline_rounded,
-            'Questions',
-            AppTheme.warning,
-            () => context.go('/questions'),
-          ),
-          _actionChip(
-            Icons.toll_rounded,
-            'Tokens',
-            AppTheme.accentViolet,
-            () => context.push('/tokens'),
-          ),
-          _actionChip(
-            Icons.verified_rounded,
-            'Proof',
-            AppTheme.success,
-            () => context.push('/proof'),
-          ),
+          const SizedBox(height: 8),
+          ...sessions.take(4).map(_buildSessionRow),
         ],
       ),
     );
   }
 
-  Widget _actionChip(
-      IconData icon, String label, Color color, VoidCallback onTap) {
+  Widget _buildSessionRow(Map<String, dynamic> s) {
+    final status = s['status'] as String? ?? 'unknown';
+    final statusColor = _statusColor(status);
     return GestureDetector(
-      onTap: onTap,
+      onTap: () => context.push('/sessions/${s['id']}'),
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+        margin: const EdgeInsets.only(bottom: 8),
         decoration: BoxDecoration(
-          color: color.withOpacity(0.12),
-          borderRadius: BorderRadius.circular(8),
-          border: Border.all(color: color.withOpacity(0.3)),
+          color: AppTheme.glassBackground,
+          borderRadius: BorderRadius.circular(12),
+          border: Border(
+            left: BorderSide(color: statusColor, width: 3),
+            top: const BorderSide(color: AppTheme.glassBorder, width: 1),
+            right: const BorderSide(color: AppTheme.glassBorder, width: 1),
+            bottom: const BorderSide(color: AppTheme.glassBorder, width: 1),
+          ),
         ),
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
         child: Row(
-          mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(icon, color: color, size: 14),
-            const SizedBox(width: 6),
-            Text(label,
-                style: TextStyle(
-                    color: color,
-                    fontSize: 12,
-                    fontWeight: FontWeight.w600)),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    s['name'] as String? ?? 'Session',
+                    style: const TextStyle(
+                        color: AppTheme.onSurface,
+                        fontSize: 13,
+                        fontWeight: FontWeight.w600),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  if ((s['current_task'] as String?) != null) ...[
+                    const SizedBox(height: 2),
+                    Text(
+                      s['current_task'] as String,
+                      style: const TextStyle(
+                          color: AppTheme.outline, fontSize: 11),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ],
+                ],
+              ),
+            ),
+            StatusBadge(status: status),
           ],
         ),
       ),
     );
   }
 
-  String _formatTokens(int tokens) {
-    if (tokens >= 1000000) return '${(tokens / 1000000).toStringAsFixed(1)}M';
-    if (tokens >= 1000) return '${(tokens / 1000).toStringAsFixed(1)}K';
-    return tokens.toString();
+  Widget _buildAttentionItems(List<Map<String, dynamic>> items) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 12, 16, 4),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Padding(
+            padding: EdgeInsets.only(bottom: 8),
+            child: Text(
+              'NEEDS ATTENTION',
+              style: TextStyle(
+                color: AppTheme.outline,
+                fontSize: 11,
+                fontWeight: FontWeight.w600,
+                letterSpacing: 0.8,
+              ),
+            ),
+          ),
+          ...items.take(3).map((item) {
+            final type = item['type'] as String? ?? 'unknown';
+            final color =
+                type == 'approval' ? AppTheme.danger : AppTheme.warning;
+            return GestureDetector(
+              onTap: () => type == 'approval'
+                  ? context.go('/approvals')
+                  : context.go('/questions'),
+              child: Container(
+                margin: const EdgeInsets.only(bottom: 8),
+                decoration: AppTheme.glassCard(
+                    radius: 12, borderColor: color.withOpacity(0.35)),
+                padding: const EdgeInsets.symmetric(
+                    horizontal: 14, vertical: 12),
+                child: Row(
+                  children: [
+                    Icon(
+                      type == 'approval'
+                          ? Icons.approval_rounded
+                          : Icons.help_outline_rounded,
+                      color: color,
+                      size: 16,
+                    ),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: Text(
+                        item['title'] as String? ??
+                            item['message'] as String? ??
+                            'Attention needed',
+                        style: const TextStyle(
+                            color: AppTheme.onSurface, fontSize: 13),
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            );
+          }),
+        ],
+      ),
+    );
   }
+
+  Color _statusColor(String status) {
+    switch (status) {
+      case 'running':
+        return AppTheme.success;
+      case 'paused':
+        return AppTheme.warning;
+      case 'blocked':
+        return AppTheme.danger;
+      case 'active':
+        return AppTheme.primary;
+      default:
+        return AppTheme.outline;
+    }
+  }
+}
+
+class _Stat {
+  final String label;
+  final String value;
+  final Color color;
+  const _Stat(this.label, this.value, this.color);
+}
+
+class _Action {
+  final String label;
+  final IconData icon;
+  final Color color;
+  final VoidCallback onTap;
+  const _Action(this.label, this.icon, this.color, this.onTap);
 }
